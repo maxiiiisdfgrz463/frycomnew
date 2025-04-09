@@ -434,7 +434,7 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ onBack = () => {} }) => {
   return (
     <div className="flex flex-col min-h-screen bg-[#f0f0ff] dark:bg-[#0d1015] rounded-[40px]">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-[#6c5ce7] dark:bg-[#6c5ce7] p-4 rounded-b-3xl shadow-md">
+      <div className="sticky top-0 z-10 dark:bg-[#6c5ce7] p-4 rounded-b-3xl shadow-md bg-[#422fcf] bg-gradient-to-r">
         <div className="flex items-center gap-3">
           <button
             className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white"
@@ -468,7 +468,6 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ onBack = () => {} }) => {
           )}
         </div>
       </div>
-
       {/* Chat Messages */}
       <div className="flex-1 p-4 overflow-y-auto">
         {isLoading ? (
@@ -571,7 +570,6 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ onBack = () => {} }) => {
           </div>
         )}
       </div>
-
       {/* Attachment Menu */}
       {showAttachMenu && (
         <div className="p-2 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex justify-around">
@@ -613,7 +611,6 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ onBack = () => {} }) => {
           </Button>
         </div>
       )}
-
       {/* Input Area */}
       <div className="p-4 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 rounded-t-3xl shadow-inner">
         <div className="flex items-center gap-2">
@@ -623,7 +620,7 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ onBack = () => {} }) => {
             className="rounded-full h-10 w-10 flex-shrink-0"
             onClick={toggleAttachMenu}
           >
-            <Paperclip className="h-5 w-5 text-[#6c5ce7]" />
+            <Paperclip className="h-5 w-5 text-[#00b4d8]" />
           </Button>
           <Input
             type="text"
@@ -637,7 +634,7 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ onBack = () => {} }) => {
             onClick={handleSendMessage}
             disabled={isSending || !input.trim()}
             size="icon"
-            className="h-12 w-12 rounded-full bg-[#6c5ce7] hover:bg-[#5b4ecc] ml-2 shadow-md"
+            className="h-12 w-12 rounded-full bg-[#6c5ce7] hover:bg-[#5b4ecc] ml-2 shadow-md dark:bg-[#00b4d8]"
           >
             {isSending ? (
               <Loader2 className="h-5 w-5 animate-spin" />
@@ -647,7 +644,6 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ onBack = () => {} }) => {
           </Button>
         </div>
       </div>
-
       {/* Bottom Navigation Bar */}
       <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 flex justify-around items-center p-2 z-20 shadow-lg">
         <Button
@@ -679,10 +675,10 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ onBack = () => {} }) => {
         <Button
           variant="ghost"
           size="icon"
-          className="flex items-center justify-center h-14 w-16 text-[#6c5ce7]"
+          className="flex items-center justify-center h-14 w-16 text-[#786ec1]"
           onClick={() => navigate("/chats")}
         >
-          <MessageSquare className="h-6 w-6" />
+          <MessageSquare className="h-6 w-6 dark:flex dark:text-[#00b4d8]" />
         </Button>
 
         <Button
@@ -694,7 +690,6 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ onBack = () => {} }) => {
           <User className="h-6 w-6" />
         </Button>
       </div>
-
       {/* Add padding at the bottom to account for the navigation bar */}
       <div className="h-16"></div>
     </div>

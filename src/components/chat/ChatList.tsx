@@ -212,7 +212,7 @@ const ChatList: React.FC<ChatListProps> = ({ onBack = () => {} }) => {
   return (
     <div className="flex flex-col min-h-screen bg-[#f0f0ff] dark:bg-[#0d1015] rounded-[40px]">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-white dark:bg-gray-900 p-4 rounded-b-3xl shadow-md">
+      <div className="sticky top-0 z-10 dark:bg-gray-900 p-4 rounded-b-3xl shadow-md bg-[#86a0d7]">
         <div className="flex items-center gap-3">
           <button
             className="w-10 h-10 rounded-md bg-gray-200 dark:bg-gray-800 flex items-center justify-center"
@@ -240,18 +240,23 @@ const ChatList: React.FC<ChatListProps> = ({ onBack = () => {} }) => {
           />
         </div>
       </div>
-
       {/* Chat List */}
       <div className="flex-1 p-4">
         <div className="flex space-x-2 mb-4 overflow-x-auto py-2 px-1">
           <button
-            className={`${activeFilter === "all" ? "bg-[#6c5ce7] text-white" : "bg-white text-gray-700"} px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap shadow`}
+            className={
+              `${activeFilter === "all" ? " text-white" : " text-gray-700"} px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap shadow` +
+              " bg-[#00b4d8]"
+            }
             onClick={() => handleFilterChange("all")}
           >
             All Chats
           </button>
           <button
-            className={`${activeFilter === "unread" ? "bg-[#6c5ce7] text-white" : "bg-white text-gray-700"} px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap shadow`}
+            className={
+              `${activeFilter === "unread" ? " text-white" : " text-gray-700"} px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap shadow` +
+              " bg-[#00b4d8]"
+            }
             onClick={() => handleFilterChange("unread")}
           >
             Unread
@@ -320,7 +325,6 @@ const ChatList: React.FC<ChatListProps> = ({ onBack = () => {} }) => {
           </div>
         )}
       </div>
-
       {/* Bottom Navigation Bar */}
       <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 flex justify-around items-center p-2 z-20 shadow-lg">
         <Button
@@ -352,7 +356,7 @@ const ChatList: React.FC<ChatListProps> = ({ onBack = () => {} }) => {
         <Button
           variant="ghost"
           size="icon"
-          className="flex items-center justify-center h-14 w-16 text-[#6c5ce7]"
+          className="flex items-center justify-center h-14 w-16 text-[#00b4d8]"
           onClick={() => navigate("/chats")}
         >
           <MessageSquare className="h-6 w-6" />
@@ -367,7 +371,6 @@ const ChatList: React.FC<ChatListProps> = ({ onBack = () => {} }) => {
           <User className="h-6 w-6" />
         </Button>
       </div>
-
       {/* Add padding at the bottom to account for the navigation bar */}
       <div className="h-16"></div>
     </div>
