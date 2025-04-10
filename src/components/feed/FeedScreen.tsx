@@ -307,7 +307,7 @@ const FeedScreen: React.FC<FeedScreenProps> = ({
   return (
     <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-[#0d1015] rounded-[40px]">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-white dark:bg-gray-900 p-4">
+      <div className="sticky top-0 z-10 bg-white dark:bg-gray-900 p-4 rounded-[30px]">
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold text-[#00b4d8]">FRYCOM</h1>
 
@@ -524,7 +524,7 @@ const FeedScreen: React.FC<FeedScreenProps> = ({
         )}
       </div>
       {/* Bottom Navigation Bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 flex justify-around items-center p-2 z-20 shadow-lg">
+      <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 flex justify-around items-center p-2 z-20 shadow-lg rounded-[40px]">
         <Button
           variant="ghost"
           size="icon"
