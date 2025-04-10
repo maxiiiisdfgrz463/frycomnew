@@ -536,7 +536,7 @@ const FeedScreen: React.FC<FeedScreenProps> = ({
         <Button
           variant="ghost"
           size="icon"
-          className="flex items-center justify-center h-14 w-40"
+          className="flex items-center justify-center h-14 w-16"
           onClick={() => navigate("/search")}
         >
           <Search className="h-6 w-6" />
@@ -553,7 +553,7 @@ const FeedScreen: React.FC<FeedScreenProps> = ({
         <Button
           variant="ghost"
           size="icon"
-          className="flex h-14 w-40 justify-center items-center relative"
+          className="flex h-14 w-16 justify-center items-center relative"
           onClick={() => navigate("/chats")}
         >
           <MessageSquare className="h-6 w-6" />
