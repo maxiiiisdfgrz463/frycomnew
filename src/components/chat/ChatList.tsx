@@ -234,7 +234,7 @@ const ChatList: React.FC<ChatListProps> = ({ onBack = () => {} }) => {
           <Input
             type="text"
             placeholder="Search conversations..."
-            className="pl-10 pr-4 py-3 w-full rounded-full bg-gray-100 dark:bg-gray-800 border-none focus:ring-2 focus:ring-[#6c5ce7] transition-all"
+            className="pl-10 pr-4 py-3 w-full rounded-full bg-gray-100 dark:bg-gray-800 border-none focus:ring-2 focus:ring-[#00b4d8] transition-all"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -253,10 +253,11 @@ const ChatList: React.FC<ChatListProps> = ({ onBack = () => {} }) => {
             All Chats
           </button>
           <button
-            className={
-              `${activeFilter === "unread" ? " text-white" : " text-gray-700"} px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap shadow` +
-              " bg-[#00b4d8]"
-            }
+            className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap shadow ${
+              activeFilter === "unread"
+                ? "bg-[#00b4d8] text-white"
+                : "bg-white text-gray-700"
+            }`}
             onClick={() => handleFilterChange("unread")}
           >
             Unread
@@ -280,14 +281,14 @@ const ChatList: React.FC<ChatListProps> = ({ onBack = () => {} }) => {
               >
                 <div className="flex items-center">
                   <div className="relative">
-                    <Avatar className="h-14 w-14 mr-3 border-2 border-[#6c5ce7] p-0.5">
+                    <Avatar className="h-14 w-14 mr-3 border-2 border-[#00b4d8] p-0.5">
                       <AvatarImage src={chat.avatar} alt={chat.name} />
                       <AvatarFallback>
                         {chat.name.charAt(0).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                     {chat.unread > 0 && (
-                      <div className="absolute -top-1 -right-1 bg-[#6c5ce7] text-white text-xs rounded-full h-5 w-5 flex items-center justify-center shadow-md">
+                      <div className="absolute -top-1 -right-1 bg-[#00b4d8] text-white text-xs rounded-full h-5 w-5 flex items-center justify-center shadow-md">
                         {chat.unread}
                       </div>
                     )}
@@ -326,11 +327,11 @@ const ChatList: React.FC<ChatListProps> = ({ onBack = () => {} }) => {
         )}
       </div>
       {/* Bottom Navigation Bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 flex justify-around items-center p-2 z-20 shadow-lg">
+      <div className="fixed bottom-4 left-4 right-4 bg-cyan-200/30 dark:bg-cyan-900/30 backdrop-blur-lg border border-cyan-300/40 dark:border-cyan-800/40 flex justify-between items-center p-2 z-20 shadow-xl rounded-[40px]">
         <Button
           variant="ghost"
           size="icon"
-          className="flex items-center justify-center h-14 w-16"
+          className="flex items-center justify-center h-14 w-14"
           onClick={() => navigate("/feed")}
         >
           <HomeIcon className="h-6 w-6" />
@@ -339,24 +340,25 @@ const ChatList: React.FC<ChatListProps> = ({ onBack = () => {} }) => {
         <Button
           variant="ghost"
           size="icon"
-          className="flex items-center justify-center h-14 w-16"
+          className="flex items-center justify-center h-14 w-14"
           onClick={() => navigate("/search")}
         >
           <Search className="h-6 w-6" />
         </Button>
 
-        {/* Create Post Button (Centered) */}
         <Button
+          variant="ghost"
+          size="icon"
+          className="flex items-center justify-center h-14 w-14 bg-[#00b4d8] rounded-full"
           onClick={() => navigate("/create-post")}
-          className="flex items-center justify-center h-12 w-12 rounded-full hover:bg-emerald-500 shadow-lg bg-[#00b4d8] absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2"
         >
-          <Plus className="h-6 w-6" />
+          <Plus className="h-6 w-6 text-white" />
         </Button>
 
         <Button
           variant="ghost"
           size="icon"
-          className="flex items-center justify-center h-14 w-16 text-[#00b4d8]"
+          className="flex h-14 w-14 justify-center items-center relative text-[#00b4d8]"
           onClick={() => navigate("/chats")}
         >
           <MessageSquare className="h-6 w-6" />
@@ -365,14 +367,14 @@ const ChatList: React.FC<ChatListProps> = ({ onBack = () => {} }) => {
         <Button
           variant="ghost"
           size="icon"
-          className="flex items-center justify-center h-14 w-16 relative"
+          className="flex items-center justify-center h-14 w-14 relative"
           onClick={() => navigate("/profile")}
         >
           <User className="h-6 w-6" />
         </Button>
       </div>
       {/* Add padding at the bottom to account for the navigation bar */}
-      <div className="h-16"></div>
+      <div className="h-20"></div>
     </div>
   );
 };

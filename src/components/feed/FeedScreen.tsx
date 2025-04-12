@@ -524,55 +524,57 @@ const FeedScreen: React.FC<FeedScreenProps> = ({
         )}
       </div>
       {/* Bottom Navigation Bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 flex justify-around items-center p-2 z-20 shadow-lg rounded-[40px]">
+      <div className="fixed bottom-4 left-4 right-4 bg-cyan-200/30 dark:bg-cyan-900/30 backdrop-blur-lg border border-cyan-300/40 dark:border-cyan-800/40 flex justify-between items-center p-2 z-20 shadow-xl rounded-[40px]">
         <Button
           variant="ghost"
           size="icon"
-          className="flex items-center justify-center h-14 w-16 text-[#00b4d8]"
+          className="flex items-center justify-center h-14 w-14"
         >
-          <HomeIcon className="h-6 w-6" />
+          <HomeIcon className="h-6 w-6 text-[#00b4d8]" />
         </Button>
 
         <Button
           variant="ghost"
           size="icon"
-          className="flex items-center justify-center h-14 w-16"
+          className="flex items-center justify-center h-14 w-14"
           onClick={() => navigate("/search")}
         >
           <Search className="h-6 w-6" />
         </Button>
 
-        {/* Create Post Button (Centered) */}
         <Button
+          variant="ghost"
+          size="icon"
+          className="flex items-center justify-center h-14 w-14 bg-[#00b4d8] rounded-full" // Added blue circle background
           onClick={onCreatePost}
-          className="flex items-center justify-center h-12 w-12 rounded-full hover:bg-emerald-500 shadow-lg bg-[#00b4d8] absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2"
         >
-          <Plus className="h-6 w-6" />
+          <Plus className="h-6 w-6 text-white" />{" "}
+          {/* Changed icon color to white for contrast */}
         </Button>
 
         <Button
           variant="ghost"
           size="icon"
-          className="flex h-14 w-16 justify-center items-center relative"
+          className="flex h-14 w-14 justify-center items-center relative"
           onClick={() => navigate("/chats")}
         >
           <MessageSquare className="h-6 w-6" />
           {hasUnreadMessages && (
-            <span className="absolute top-2 right-3 h-2 w-2 bg-red-500 rounded-full"></span>
+            <span className="absolute top-2 right-2 h-2 w-2 bg-red-500 rounded-full"></span>
           )}
         </Button>
 
         <Button
           variant="ghost"
           size="icon"
-          className="flex items-center justify-center h-14 w-16"
+          className="flex items-center justify-center h-14 w-14"
           onClick={onProfile}
         >
           <User className="h-6 w-6" />
         </Button>
       </div>
       {/* Add padding at the bottom to account for the navigation bar */}
-      <div className="h-16"></div>
+      <div className="h-20"></div>
     </div>
   );
 };

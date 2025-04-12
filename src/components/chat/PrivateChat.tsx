@@ -434,7 +434,7 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ onBack = () => {} }) => {
   return (
     <div className="flex flex-col min-h-screen bg-[#f0f0ff] dark:bg-[#0d1015] rounded-[40px]">
       {/* Header */}
-      <div className="sticky top-0 z-10 dark:bg-[#6c5ce7] p-4 rounded-b-3xl shadow-md bg-[#422fcf] bg-gradient-to-r">
+      <div className="sticky top-0 z-10 dark:bg-[#00b4d8] p-4 rounded-b-3xl shadow-md bg-[#00b4d8] bg-gradient-to-r">
         <div className="flex items-center gap-3">
           <button
             className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white"
@@ -484,7 +484,7 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ onBack = () => {} }) => {
                   className={`flex ${isOwnMessage ? "justify-end" : "justify-start"}`}
                 >
                   <div
-                    className={`max-w-[80%] ${isOwnMessage ? "bg-[#6c5ce7] text-white rounded-t-2xl rounded-bl-2xl rounded-br-md" : "bg-white dark:bg-gray-800 shadow rounded-t-2xl rounded-br-2xl rounded-bl-md"} p-4 shadow-md`}
+                    className={`max-w-[80%] ${isOwnMessage ? "bg-[#00b4d8] text-white rounded-t-2xl rounded-bl-2xl rounded-br-md" : "bg-white dark:bg-gray-800 shadow rounded-t-2xl rounded-br-2xl rounded-bl-md"} p-4 shadow-md`}
                   >
                     {!isOwnMessage && (
                       <div className="flex items-center mb-2">
@@ -580,7 +580,7 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ onBack = () => {} }) => {
             onClick={() => handleAttachmentUpload("image")}
             disabled={isSending}
           >
-            <Image className="h-6 w-6 text-[#6c5ce7]" />
+            <Image className="h-6 w-6 text-[#00b4d8]" />
           </Button>
           <Button
             variant="ghost"
@@ -589,7 +589,7 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ onBack = () => {} }) => {
             onClick={() => handleAttachmentUpload("video")}
             disabled={isSending}
           >
-            <Video className="h-6 w-6 text-[#6c5ce7]" />
+            <Video className="h-6 w-6 text-[#00b4d8]" />
           </Button>
           <Button
             variant="ghost"
@@ -598,7 +598,7 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ onBack = () => {} }) => {
             onClick={() => handleAttachmentUpload("file")}
             disabled={isSending}
           >
-            <File className="h-6 w-6 text-[#6c5ce7]" />
+            <File className="h-6 w-6 text-[#00b4d8]" />
           </Button>
           <Button
             variant="ghost"
@@ -607,7 +607,7 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ onBack = () => {} }) => {
             onClick={() => handleAttachmentUpload("audio")}
             disabled={isSending}
           >
-            <Mic className="h-6 w-6 text-[#6c5ce7]" />
+            <Mic className="h-6 w-6 text-[#00b4d8]" />
           </Button>
         </div>
       )}
@@ -628,13 +628,13 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ onBack = () => {} }) => {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
-            className="flex-1 rounded-full bg-gray-100 dark:bg-gray-800 px-4 py-3 focus:ring-2 focus:ring-[#6c5ce7] transition-all"
+            className="flex-1 rounded-full bg-gray-100 dark:bg-gray-800 px-4 py-3 focus:ring-2 focus:ring-[#00b4d8] transition-all"
           />
           <Button
             onClick={handleSendMessage}
             disabled={isSending || !input.trim()}
             size="icon"
-            className="h-12 w-12 rounded-full bg-[#6c5ce7] hover:bg-[#5b4ecc] ml-2 shadow-md dark:bg-[#00b4d8]"
+            className="h-12 w-12 rounded-full bg-[#00b4d8] hover:bg-[#0097b2] ml-2 shadow-md dark:bg-[#00b4d8]"
           >
             {isSending ? (
               <Loader2 className="h-5 w-5 animate-spin" />
@@ -644,54 +644,6 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ onBack = () => {} }) => {
           </Button>
         </div>
       </div>
-      {/* Bottom Navigation Bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 flex justify-around items-center p-2 z-20 shadow-lg">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="flex items-center justify-center h-14 w-16"
-          onClick={() => navigate("/feed")}
-        >
-          <HomeIcon className="h-6 w-6" />
-        </Button>
-
-        <Button
-          variant="ghost"
-          size="icon"
-          className="flex items-center justify-center h-14 w-16"
-          onClick={() => navigate("/search")}
-        >
-          <Search className="h-6 w-6" />
-        </Button>
-
-        {/* Create Post Button (Centered) */}
-        <Button
-          onClick={() => navigate("/create-post")}
-          className="flex items-center justify-center h-12 w-12 rounded-full hover:bg-emerald-500 shadow-lg bg-[#00b4d8] absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2"
-        >
-          <Plus className="h-6 w-6" />
-        </Button>
-
-        <Button
-          variant="ghost"
-          size="icon"
-          className="flex items-center justify-center h-14 w-16 text-[#786ec1]"
-          onClick={() => navigate("/chats")}
-        >
-          <MessageSquare className="h-6 w-6 dark:flex dark:text-[#00b4d8]" />
-        </Button>
-
-        <Button
-          variant="ghost"
-          size="icon"
-          className="flex items-center justify-center h-14 w-16"
-          onClick={() => navigate("/profile")}
-        >
-          <User className="h-6 w-6" />
-        </Button>
-      </div>
-      {/* Add padding at the bottom to account for the navigation bar */}
-      <div className="h-16"></div>
     </div>
   );
 };
