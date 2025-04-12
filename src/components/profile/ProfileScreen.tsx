@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -18,7 +19,6 @@ import {
   Search,
   Home as HomeIcon,
 } from "lucide-react";
-import SparkleIcon from "@/components/ui/sparkle-icon";
 import { formatDistanceToNow } from "date-fns";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
@@ -34,6 +34,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
   onLogout = () => {},
 }) => {
   const { user, signOut } = useAuth();
+  const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
   const [profile, setProfile] = useState({
     name: "",
@@ -61,18 +62,15 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
           .single();
 
         if (error) {
-          // If the profile doesn't exist yet, create a default one
           if (error.code === "PGRST116") {
-            // No rows returned
             const defaultProfile = {
               id: user.id,
               name: user.email?.split("@")[0] || "User",
-              email: user.email || "", // Ensure email is never null
+              email: user.email || "",
               avatar_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email || user.id}`,
               updated_at: new Date().toISOString(),
             };
 
-            // Create a default profile
             const { error: insertError } = await supabase
               .from("profiles")
               .insert(defaultProfile);
@@ -82,7 +80,6 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
               return;
             }
 
-            // Set the default profile in state
             setProfile({
               name: defaultProfile.name,
               location: "",
@@ -109,10 +106,10 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
             phone: data.phone || "",
             avatar:
               data.avatar_url ||
-              `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email}`,
+              `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email || user.id}`,
             bio: data.bio || "",
-            showEmail: data.show_email || false,
-            showPhone: data.show_phone || false,
+            showEmail: data.show_email ?? false, // Use nullish coalescing for safety
+            showPhone: data.show_phone ?? false, // Use nullish coalescing for safety
           });
         }
       } catch (error) {
@@ -150,7 +147,6 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
       if (!user) return;
 
       try {
-        // Fetch posts by this user
         const { data: postsData, error } = await supabase
           .from("posts")
           .select("*")
@@ -170,16 +166,13 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
           return;
         }
 
-        // Format posts
         const formattedPosts = await Promise.all(
           postsData.map(async (post) => {
-            // Get comments count
             const { count: commentsCount } = await supabase
               .from("comments")
               .select("id", { count: "exact" })
               .eq("post_id", post.id);
 
-            // Get likes count
             const { count: likesCount } = await supabase
               .from("likes")
               .select("id", { count: "exact" })
@@ -244,7 +237,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
             <ArrowLeft className="h-6 w-6" />
           </button>
           <h1 className="text-xl font-semibold">Edit Profile</h1>
-          <div className="w-12 h-12"></div> {/* Empty div for spacing */}
+          <div className="w-12 h-12"></div>
         </div>
 
         <EditProfileForm
@@ -402,12 +395,12 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
       </div>
 
       {/* Bottom Navigation Bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 flex justify-around items-center p-2 z-20 shadow-lg">
+      <div className="fixed bottom-4 left-4 right-4 bg-cyan-200/30 dark:bg-cyan-900/30 backdrop-blur-lg border border-cyan-300/40 dark:border-cyan-800/40 flex justify-between items-center p-2 z-20 shadow-xl rounded-[40px]">
         <Button
           variant="ghost"
           size="icon"
-          className="flex items-center justify-center h-14 w-16"
-          onClick={onBack}
+          className="flex items-center justify-center h-14 w-14"
+          onClick={() => navigate("/")}
         >
           <HomeIcon className="h-6 w-6" />
         </Button>
@@ -415,40 +408,42 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
         <Button
           variant="ghost"
           size="icon"
-          className="flex items-center justify-center h-14 w-16"
-          onClick={() => (window.location.href = "/search")}
+          className="flex items-center justify-center h-14 w-14"
+          onClick={() => navigate("/search")}
         >
           <Search className="h-6 w-6" />
         </Button>
 
-        {/* Create Post Button (Centered) */}
         <Button
-          className="flex items-center justify-center h-12 w-12 rounded-full hover:bg-emerald-500 shadow-lg bg-[#00b4d8] -mt-6 absolute left-1/2 transform -translate-x-1/2 -translate-y-1/2"
-          onClick={() => (window.location.href = "/create-post")}
+          variant="ghost"
+          size="icon"
+          className="flex items-center justify-center h-14 w-14 bg-[#00b4d8] rounded-full"
+          onClick={() => navigate("/create-post")}
         >
-          <Plus className="h-6 w-6" />
+          <Plus className="h-6 w-6 text-white" />
         </Button>
 
         <Button
           variant="ghost"
           size="icon"
-          className="flex items-center justify-center h-14 w-16"
-          onClick={() => (window.location.href = "/chatbot")}
+          className="flex h-14 w-14 justify-center items-center relative"
+          onClick={() => navigate("/chats")}
         >
-          <SparkleIcon className="h-6 w-6" />
+          <MessageSquare className="h-6 w-6" />
         </Button>
 
         <Button
           variant="ghost"
           size="icon"
-          className="flex items-center justify-center h-14 w-16 text-[#00b4d8]"
+          className="flex items-center justify-center h-14 w-14 text-[#00b4d8]"
+          onClick={() => navigate("/profile")}
         >
           <User className="h-6 w-6" />
         </Button>
       </div>
 
       {/* Add padding at the bottom to account for the navigation bar */}
-      <div className="h-16"></div>
+      <div className="h-20"></div>
     </div>
   );
 };
