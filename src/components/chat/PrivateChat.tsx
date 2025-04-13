@@ -434,7 +434,7 @@ const PrivateChat: React.FC<PrivateChatProps> = ({ onBack = () => {} }) => {
   return (
     <div className="flex flex-col min-h-screen bg-[#f0f0ff] dark:bg-[#0d1015] rounded-[40px]">
       {/* Header */}
-      <div className="sticky top-0 z-10 dark:bg-[#00b4d8] p-4 rounded-b-3xl shadow-md bg-[#00b4d8] bg-gradient-to-r">
+      <div className="sticky top-0 z-10 bg-white/80 dark:bg-gray-900/80 p-4 rounded-b-3xl shadow-md bg-[#00b4d8] bg-gradient-to-r">
         <div className="flex items-center gap-3">
           <button
             className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white"

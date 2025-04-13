@@ -11,8 +11,8 @@ import {
   HomeIcon,
   Loader2,
   MessageSquare,
-  Filter,
   Bell,
+  Eye, // Icon für "Unread"
 } from "lucide-react";
 import { useNotifications } from "@/routes";
 import { useAuth } from "@/contexts/AuthContext";
@@ -49,13 +49,11 @@ const ChatList: React.FC<ChatListProps> = ({ onBack = () => {} }) => {
 
     console.log("ChatList initialized with user:", user.id);
 
-    // Mark messages as read when viewing chat list
     refreshNotifications();
 
     const fetchChats = async () => {
       setLoading(true);
       try {
-        // Get all users the current user has chatted with
         const { data: sentMessages, error: sentError } = await supabase
           .from("private_messages")
           .select("receiver_id, content, created_at")
@@ -73,12 +71,10 @@ const ChatList: React.FC<ChatListProps> = ({ onBack = () => {} }) => {
           return;
         }
 
-        // Combine and find unique users
         const userIds = new Set<string>();
         sentMessages?.forEach((msg) => userIds.add(msg.receiver_id));
         receivedMessages?.forEach((msg) => userIds.add(msg.sender_id));
 
-        // Get user profiles
         const userProfiles: { [key: string]: any } = {};
         for (const id of userIds) {
           const { data: profile } = await supabase
@@ -92,10 +88,8 @@ const ChatList: React.FC<ChatListProps> = ({ onBack = () => {} }) => {
           }
         }
 
-        // Get last message for each chat
         const chatPreviews: ChatPreview[] = [];
         for (const userId of userIds) {
-          // Get the last message between these users (in either direction)
           const { data: lastMessages, error: lastMessageError } = await supabase
             .from("private_messages")
             .select("*")
@@ -113,7 +107,6 @@ const ChatList: React.FC<ChatListProps> = ({ onBack = () => {} }) => {
           const lastMessage =
             lastMessages && lastMessages.length > 0 ? lastMessages[0] : null;
 
-          // Count unread messages
           const { count: unreadCount, error: unreadError } = await supabase
             .from("private_messages")
             .select("*", { count: "exact" })
@@ -141,17 +134,13 @@ const ChatList: React.FC<ChatListProps> = ({ onBack = () => {} }) => {
           }
         }
 
-        // Sort by most recent message
         chatPreviews.sort((a, b) => {
-          // Sort unread first, then by timestamp
           if (a.unread > 0 && b.unread === 0) return -1;
           if (a.unread === 0 && b.unread > 0) return 1;
 
-          // Extract time from timestamp strings for comparison
           const timeA = a.timestamp.replace(" ago", "");
           const timeB = b.timestamp.replace(" ago", "");
 
-          // Compare timestamps (more recent first)
           return timeA.localeCompare(timeB);
         });
 
@@ -165,7 +154,6 @@ const ChatList: React.FC<ChatListProps> = ({ onBack = () => {} }) => {
 
     fetchChats();
 
-    // Set up real-time subscription for new messages
     const subscription = supabase
       .channel("private_messages_changes")
       .on(
@@ -177,7 +165,6 @@ const ChatList: React.FC<ChatListProps> = ({ onBack = () => {} }) => {
           filter: `receiver_id=eq.${user.id}`,
         },
         (payload) => {
-          // Refresh the chat list when a new message is received
           fetchChats();
         },
       )
@@ -188,7 +175,6 @@ const ChatList: React.FC<ChatListProps> = ({ onBack = () => {} }) => {
     };
   }, [user]);
 
-  // Filter chats based on search query and active filter
   const filteredChats = chats.filter((chat) => {
     const matchesSearch = chat.name
       .toLowerCase()
@@ -218,11 +204,15 @@ const ChatList: React.FC<ChatListProps> = ({ onBack = () => {} }) => {
             className="w-10 h-10 rounded-md bg-gray-200 dark:bg-gray-800 flex items-center justify-center"
             onClick={onBack}
           >
-            <ArrowLeft className="h-5 w-5" />
+            <ArrowLeft className="h-5 w-5 text-gray-600 dark:text-gray-300" />
           </button>
           <div>
-            <h1 className="text-xl font-semibold">Messages</h1>
-            <p className="text-sm text-gray-500">Your conversations</p>
+            <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+              Messages
+            </h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Your conversations
+            </p>
           </div>
         </div>
 
@@ -234,7 +224,7 @@ const ChatList: React.FC<ChatListProps> = ({ onBack = () => {} }) => {
           <Input
             type="text"
             placeholder="Search conversations..."
-            className="pl-10 pr-4 py-3 w-full rounded-full bg-gray-100 dark:bg-gray-800 border-none focus:ring-2 focus:ring-[#00b4d8] transition-all"
+            className="pl-10 pr-4 py-3 w-full rounded-full bg-gray-100 dark:bg-gray-800 border-none focus:ring-2 focus:ring-[#00b4d8] transition-all text-gray-900 dark:text-gray-100 placeholder-gray-500"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -242,34 +232,43 @@ const ChatList: React.FC<ChatListProps> = ({ onBack = () => {} }) => {
       </div>
       {/* Chat List */}
       <div className="flex-1 p-4">
+        {/* Filter Tabs */}
         <div className="flex space-x-2 mb-4 overflow-x-auto py-2 px-1">
           <button
-            className={
-              `${activeFilter === "all" ? " text-white" : " text-gray-700"} px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap shadow` +
-              " bg-[#00b4d8]"
-            }
+            className={`flex items-center gap-2 px-4 py-3 rounded-xl shadow-sm transition-all duration-200 ${
+              activeFilter === "all"
+                ? "bg-[#00b4d8] text-white scale-105"
+                : "bg-white dark:bg-gray-800/80 text-gray-900 dark:text-gray-100 hover:bg-gray-50/80 dark:hover:bg-gray-700/80"
+            }`}
             onClick={() => handleFilterChange("all")}
           >
-            All Chats
+            <MessageSquare
+              className={`h-5 w-5 ${
+                activeFilter === "all" ? "text-white" : "text-[#00b4d8]"
+              }`}
+            />
+            <span className="font-medium">All Chats</span>
           </button>
           <button
-            className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap shadow ${
+            className={`flex items-center gap-2 px-4 py-3 rounded-xl shadow-sm transition-all duration-200 ${
               activeFilter === "unread"
-                ? "bg-[#00b4d8] text-white"
-                : "bg-white text-gray-700"
+                ? "bg-[#00b4d8] text-white scale-105"
+                : "bg-white dark:bg-gray-800/80 text-gray-900 dark:text-gray-100 hover:bg-gray-50/80 dark:hover:bg-gray-700/80"
             }`}
             onClick={() => handleFilterChange("unread")}
           >
-            Unread
-          </button>
-          <button className="bg-white text-gray-700 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap shadow">
-            Recent
+            <Eye
+              className={`h-5 w-5 ${
+                activeFilter === "unread" ? "text-white" : "text-[#00b4d8]"
+              }`}
+            />
+            <span className="font-medium">Unread</span>
           </button>
         </div>
 
         {loading ? (
           <div className="flex justify-center items-center py-10">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <Loader2 className="h-8 w-8 animate-spin text-[#00b4d8]" />
           </div>
         ) : filteredChats.length > 0 ? (
           <div className="space-y-2">
@@ -283,7 +282,7 @@ const ChatList: React.FC<ChatListProps> = ({ onBack = () => {} }) => {
                   <div className="relative">
                     <Avatar className="h-14 w-14 mr-3 border-2 border-[#00b4d8] p-0.5">
                       <AvatarImage src={chat.avatar} alt={chat.name} />
-                      <AvatarFallback>
+                      <AvatarFallback className="bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
                         {chat.name.charAt(0).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
@@ -295,7 +294,9 @@ const ChatList: React.FC<ChatListProps> = ({ onBack = () => {} }) => {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex justify-between items-baseline">
-                      <h3 className="font-semibold truncate">{chat.name}</h3>
+                      <h3 className="font-semibold truncate text-gray-900 dark:text-gray-100">
+                        {chat.name}
+                      </h3>
                       <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap ml-2">
                         {chat.timestamp}
                       </span>
@@ -334,7 +335,7 @@ const ChatList: React.FC<ChatListProps> = ({ onBack = () => {} }) => {
           className="flex items-center justify-center h-14 w-14"
           onClick={() => navigate("/feed")}
         >
-          <HomeIcon className="h-6 w-6" />
+          <HomeIcon className="h-6 w-6 text-gray-600 dark:text-gray-300" />
         </Button>
 
         <Button
@@ -343,7 +344,7 @@ const ChatList: React.FC<ChatListProps> = ({ onBack = () => {} }) => {
           className="flex items-center justify-center h-14 w-14"
           onClick={() => navigate("/search")}
         >
-          <Search className="h-6 w-6" />
+          <Search className="h-6 w-6 text-gray-600 dark:text-gray-300" />
         </Button>
 
         <Button
@@ -370,7 +371,7 @@ const ChatList: React.FC<ChatListProps> = ({ onBack = () => {} }) => {
           className="flex items-center justify-center h-14 w-14 relative"
           onClick={() => navigate("/profile")}
         >
-          <User className="h-6 w-6" />
+          <User className="h-6 w-6 text-gray-600 dark:text-gray-300" />
         </Button>
       </div>
       {/* Add padding at the bottom to account for the navigation bar */}

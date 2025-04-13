@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -39,129 +39,125 @@ const CommentSection = ({
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  // Funktion zum Abrufen der Kommentare
+  const fetchComments = useCallback(async () => {
+    if (!postId) return;
+
+    setLoading(true);
+    try {
+      // Fetch comments for this post
+      const { data: commentsData, error } = await supabase
+        .from("comments")
+        .select("*")
+        .eq("post_id", postId)
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Error fetching comments:", error);
+        return;
+      }
+
+      if (!commentsData || commentsData.length === 0) {
+        setLocalComments([]);
+        setLoading(false);
+        return;
+      }
+
+      // Fetch user likes for comments if user is logged in
+      let likedCommentIds = new Set();
+      if (user) {
+        const { data: likesData } = await supabase
+          .from("comment_likes")
+          .select("comment_id")
+          .eq("user_id", user.id);
+
+        likedCommentIds = new Set(
+          likesData?.map((like) => like.comment_id) || [],
+        );
+      }
+
+      // Get all unique user IDs from comments to fetch profiles in batch
+      const userIds = [
+        ...new Set(commentsData.map((comment) => comment.user_id)),
+      ];
+
+      // Fetch all profiles in a single query
+      const { data: profilesData } = await supabase
+        .from("profiles")
+        .select("id, name, avatar_url")
+        .in("id", userIds);
+
+      // Create a map of user profiles for quick lookup
+      const profilesMap = new Map();
+      if (profilesData) {
+        profilesData.forEach((profile) => {
+          profilesMap.set(profile.id, {
+            name: profile.name || "Unknown User",
+            avatar_url:
+              profile.avatar_url ||
+              `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile.id}`,
+          });
+        });
+      }
+
+      // Get all comment IDs to fetch likes counts in batch
+      const commentIds = commentsData.map((comment) => comment.id);
+
+      // Fetch all like counts in a single query
+      const { data: likesCountData } = await supabase
+        .from("comment_likes")
+        .select("comment_id, id")
+        .in("comment_id", commentIds);
+
+      // Create a map of like counts for quick lookup
+      const likesCountMap = new Map();
+      if (likesCountData) {
+        likesCountData.forEach((like) => {
+          const count = likesCountMap.get(like.comment_id) || 0;
+          likesCountMap.set(like.comment_id, count + 1);
+        });
+      }
+
+      // Format comments with author info
+      const formattedComments = commentsData.map((comment) => {
+        const profile = profilesMap.get(comment.user_id) || {
+          name: "Unknown User",
+          avatar_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${comment.user_id}`,
+        };
+
+        return {
+          id: comment.id,
+          author: {
+            name: profile.name,
+            avatar: profile.avatar_url,
+          },
+          content: comment.content,
+          timestamp: formatDistanceToNow(new Date(comment.created_at), {
+            addSuffix: true,
+          }),
+          likes: likesCountMap.get(comment.id) || 0,
+          isLiked: likedCommentIds.has(comment.id),
+          user_id: comment.user_id,
+        };
+      });
+
+      setLocalComments(formattedComments);
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching comments:", error);
+      setLoading(false);
+    }
+  }, [postId, user]);
+
+  // Initial fetch of comments
   useEffect(() => {
     let isMounted = true;
-    const fetchComments = async () => {
-      if (!postId) return;
-
-      setLoading(true);
-      try {
-        // Fetch comments for this post
-        const { data: commentsData, error } = await supabase
-          .from("comments")
-          .select("*")
-          .eq("post_id", postId)
-          .order("created_at", { ascending: false });
-
-        if (error) {
-          console.error("Error fetching comments:", error);
-          return;
-        }
-
-        if (!commentsData || commentsData.length === 0) {
-          if (isMounted) {
-            setLocalComments([]);
-            setLoading(false);
-          }
-          return;
-        }
-
-        // Fetch user likes for comments if user is logged in
-        let likedCommentIds = new Set();
-        if (user) {
-          const { data: likesData } = await supabase
-            .from("comment_likes")
-            .select("comment_id")
-            .eq("user_id", user.id);
-
-          likedCommentIds = new Set(
-            likesData?.map((like) => like.comment_id) || [],
-          );
-        }
-
-        // Get all unique user IDs from comments to fetch profiles in batch
-        const userIds = [
-          ...new Set(commentsData.map((comment) => comment.user_id)),
-        ];
-
-        // Fetch all profiles in a single query
-        const { data: profilesData } = await supabase
-          .from("profiles")
-          .select("id, name, avatar_url")
-          .in("id", userIds);
-
-        // Create a map of user profiles for quick lookup
-        const profilesMap = new Map();
-        if (profilesData) {
-          profilesData.forEach((profile) => {
-            profilesMap.set(profile.id, {
-              name: profile.name || "Unknown User",
-              avatar_url:
-                profile.avatar_url ||
-                `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile.id}`,
-            });
-          });
-        }
-
-        // Get all comment IDs to fetch likes counts in batch
-        const commentIds = commentsData.map((comment) => comment.id);
-
-        // Fetch all like counts in a single query
-        const { data: likesCountData } = await supabase
-          .from("comment_likes")
-          .select("comment_id, id")
-          .in("comment_id", commentIds);
-
-        // Create a map of like counts for quick lookup
-        const likesCountMap = new Map();
-        if (likesCountData) {
-          likesCountData.forEach((like) => {
-            const count = likesCountMap.get(like.comment_id) || 0;
-            likesCountMap.set(like.comment_id, count + 1);
-          });
-        }
-
-        // Format comments with author info
-        const formattedComments = commentsData.map((comment) => {
-          const profile = profilesMap.get(comment.user_id) || {
-            name: "Unknown User",
-            avatar_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${comment.user_id}`,
-          };
-
-          return {
-            id: comment.id,
-            author: {
-              name: profile.name,
-              avatar: profile.avatar_url,
-            },
-            content: comment.content,
-            timestamp: formatDistanceToNow(new Date(comment.created_at), {
-              addSuffix: true,
-            }),
-            likes: likesCountMap.get(comment.id) || 0,
-            isLiked: likedCommentIds.has(comment.id),
-            user_id: comment.user_id,
-          };
-        });
-
-        if (isMounted) {
-          setLocalComments(formattedComments);
-          setLoading(false);
-        }
-      } catch (error) {
-        console.error("Error fetching comments:", error);
-        if (isMounted) {
-          setLoading(false);
-        }
-      }
-    };
-
     fetchComments();
 
     return () => {
       isMounted = false;
     };
-  }, [postId, user]);
+  }, [fetchComments]);
 
   const handleCommentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setNewComment(e.target.value);
@@ -189,44 +185,11 @@ const CommentSection = ({
       }
 
       if (commentData) {
-        // Get the user's profile data for accurate avatar
-        const { data: profileData } = await supabase
-          .from("profiles")
-          .select("name, avatar_url")
-          .eq("id", user.id)
-          .single();
-
-        // Create a new comment object for UI
-        const newCommentObj: Comment = {
-          id: commentData.id,
-          author: {
-            name:
-              profileData?.name ||
-              user.user_metadata?.name ||
-              user.email?.split("@")[0] ||
-              "User",
-            avatar:
-              profileData?.avatar_url ||
-              user.user_metadata?.avatar_url ||
-              `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email || user.id}`,
-          },
-          content: newComment.trim(),
-          timestamp: "Just now",
-          likes: 0,
-          isLiked: false,
-          user_id: user.id,
-        };
-
-        // Update local state - ensure we don't add duplicate comments
-        const commentExists = localComments.some(
-          (comment) => comment.id === newCommentObj.id,
-        );
-        if (!commentExists) {
-          setLocalComments([newCommentObj, ...localComments]);
-        }
-
         // Call the callback
         onAddComment(newComment);
+
+        // Fetch updated comments from the database
+        await fetchComments();
 
         // Clear the input
         setNewComment("");
@@ -254,10 +217,8 @@ const CommentSection = ({
         return;
       }
 
-      // Remove comment from UI
-      setLocalComments(
-        localComments.filter((comment) => comment.id !== commentId),
-      );
+      // Fetch updated comments from the database
+      await fetchComments();
     } catch (error) {
       console.error("Error deleting comment:", error);
     }
@@ -311,7 +272,7 @@ const CommentSection = ({
     <div className="w-full bg-white dark:bg-gray-800 rounded-md">
       {loading ? (
         <div className="flex justify-center items-center py-4">
-          <Loader2 className="h-5 w-5 animate-spin text-primary" />
+          <Loader2 className="h-5 w-5 animate-spin text-[#00b4d8]" />
         </div>
       ) : (
         <div className="space-y-4">
@@ -331,7 +292,7 @@ const CommentSection = ({
                       src={comment.author.avatar}
                       alt={comment.author.name}
                     />
-                    <AvatarFallback>
+                    <AvatarFallback className="bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
                       {comment.author.name.charAt(0)}
                     </AvatarFallback>
                   </Avatar>
@@ -339,7 +300,7 @@ const CommentSection = ({
                     <div className="flex justify-between items-start">
                       <div>
                         <p
-                          className="font-medium text-sm cursor-pointer hover:underline"
+                          className="font-medium text-sm cursor-pointer hover:underline text-gray-900 dark:text-gray-100"
                           onClick={() => navigate(`/user/${comment.user_id}`)}
                         >
                           {comment.author.name}
@@ -368,11 +329,15 @@ const CommentSection = ({
                           <Heart
                             className={`h-4 w-4 ${comment.isLiked ? "fill-red-500 text-red-500" : "text-gray-500 dark:text-gray-400"}`}
                           />
-                          <span className="ml-1 text-xs">{comment.likes}</span>
+                          <span className="ml-1 text-xs text-gray-500 dark:text-gray-400">
+                            {comment.likes}
+                          </span>
                         </Button>
                       </div>
                     </div>
-                    <p className="text-sm mt-1">{comment.content}</p>
+                    <p className="text-sm mt-1 text-gray-900 dark:text-gray-100">
+                      {comment.content}
+                    </p>
                   </div>
                 </div>
               ))
@@ -393,20 +358,20 @@ const CommentSection = ({
                 }
                 alt="Current User"
               />
-              <AvatarFallback>
+              <AvatarFallback className="bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
                 {user?.email?.charAt(0).toUpperCase() || "U"}
               </AvatarFallback>
             </Avatar>
             <div className="flex-1 flex gap-2">
               <Textarea
                 placeholder="Add a comment..."
-                className="min-h-[40px] text-sm resize-none dark:bg-gray-700"
+                className="min-h-[40px] text-sm resize-none bg-gray-100/50 dark:bg-gray-700/50 border-gray-200/50 dark:border-gray-600/50 text-gray-900 dark:text-gray-100"
                 value={newComment}
                 onChange={handleCommentChange}
               />
               <Button
                 size="sm"
-                className="self-end"
+                className="self-end bg-[#00b4d8] hover:bg-[#00b4d8]/80"
                 onClick={handleSubmitComment}
                 disabled={!newComment.trim() || submitting}
               >
