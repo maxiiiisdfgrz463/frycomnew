@@ -21,7 +21,8 @@ interface Notification {
   id: string;
   type: "like" | "comment" | "follow";
   content: string;
-  timestamp: string;
+  timestamp: string; // Raw timestamp for sorting
+  displayTimestamp: string; // Formatted for display
   sender: {
     id: string;
     name: string;
@@ -105,7 +106,8 @@ const NotificationsScreen: React.FC<NotificationsScreenProps> = ({
           id: `like_${like.id}`,
           type: "like" as const,
           content: "liked your post",
-          timestamp: formatDistanceToNow(new Date(like.created_at), {
+          timestamp: like.created_at, // Raw timestamp for sorting
+          displayTimestamp: formatDistanceToNow(new Date(like.created_at), {
             addSuffix: true,
           }),
           sender: {
@@ -128,7 +130,8 @@ const NotificationsScreen: React.FC<NotificationsScreenProps> = ({
             (comment.content.length > 30
               ? comment.content.substring(0, 30) + "..."
               : comment.content),
-          timestamp: formatDistanceToNow(new Date(comment.created_at), {
+          timestamp: comment.created_at, // Raw timestamp for sorting
+          displayTimestamp: formatDistanceToNow(new Date(comment.created_at), {
             addSuffix: true,
           }),
           sender: {
@@ -147,7 +150,8 @@ const NotificationsScreen: React.FC<NotificationsScreenProps> = ({
           id: `follow_${follow.id}`,
           type: "follow" as const,
           content: "started following you",
-          timestamp: formatDistanceToNow(new Date(follow.created_at), {
+          timestamp: follow.created_at, // Raw timestamp for sorting
+          displayTimestamp: formatDistanceToNow(new Date(follow.created_at), {
             addSuffix: true,
           }),
           sender: {
@@ -167,16 +171,11 @@ const NotificationsScreen: React.FC<NotificationsScreenProps> = ({
           ...followNotifications,
         ];
 
-        // Sort by timestamp (newest first)
+        // Sort by raw timestamp (newest first)
         allNotifications.sort((a, b) => {
-          // Extract the time part from the "X time ago" format
-          const timeA = a.timestamp.replace(" ago", "");
-          const timeB = b.timestamp.replace(" ago", "");
-
-          // For simplicity, we'll compare the original timestamps
-          // This works because formatDistanceToNow creates consistent strings
-          // that can be compared alphabetically for recency
-          return timeA.localeCompare(timeB);
+          return (
+            new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+          );
         });
 
         setNotifications(allNotifications);
@@ -225,14 +224,16 @@ const NotificationsScreen: React.FC<NotificationsScreenProps> = ({
             {notifications.map((notification) => (
               <div
                 key={notification.id}
-                className="flex items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
-                onClick={() => {
-                  if (notification.type === "follow") {
-                    navigate(`/user/${notification.sender.id}`);
-                  } else if (notification.postId) {
-                    navigate("/feed");
-                  }
-                }}
+                className={`flex items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg ${
+                  notification.type === "follow"
+                    ? "hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                    : ""
+                }`}
+                onClick={
+                  notification.type === "follow"
+                    ? () => navigate(`/user/${notification.sender.id}`)
+                    : undefined
+                }
               >
                 <div className="flex-shrink-0 mr-3 bg-white dark:bg-gray-700 rounded-full p-2">
                   {getNotificationIcon(notification.type)}
@@ -256,7 +257,7 @@ const NotificationsScreen: React.FC<NotificationsScreenProps> = ({
                         {notification.content}
                       </p>
                       <p className="text-xs text-gray-500">
-                        {notification.timestamp}
+                        {notification.displayTimestamp}
                       </p>
                     </div>
                   </div>

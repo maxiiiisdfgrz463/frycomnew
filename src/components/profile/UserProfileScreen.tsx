@@ -22,6 +22,7 @@ import { formatDistanceToNow } from "date-fns";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/components/ui/use-toast";
+import { useNotifications } from "@/routes"; // Neu: Für Benachrichtigungsstatus
 
 interface UserProfileScreenProps {
   userId: string;
@@ -35,6 +36,7 @@ const UserProfileScreen: React.FC<UserProfileScreenProps> = ({
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
+  const { hasUnreadMessages } = useNotifications(); // Neu: Für ungelesene Nachrichten
   const [profile, setProfile] = useState<any>(null);
   const [userPosts, setUserPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,13 +45,54 @@ const UserProfileScreen: React.FC<UserProfileScreenProps> = ({
   const [followersCount, setFollowersCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
   const [followLoading, setFollowLoading] = useState(false);
+  const [userProfileImage, setUserProfileImage] = useState<string | null>(null); // Neu: Für Profilbild
+
+  // Neu: Profilbild des eingeloggten Benutzers abrufen
+  useEffect(() => {
+    const fetchUserProfileImage = async () => {
+      if (!user) return;
+
+      try {
+        const { data: profileData, error } = await supabase
+          .from("profiles")
+          .select("avatar_url")
+          .eq("id", user.id)
+          .single();
+
+        if (error) {
+          console.error("Fehler beim Abrufen des Profilbildes:", error);
+          return;
+        }
+
+        setUserProfileImage(
+          profileData?.avatar_url ||
+            `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.email || user?.id || "user"}`,
+        );
+      } catch (error) {
+        console.error("Fehler beim Abrufen des Profilbildes:", error);
+        setUserProfileImage(
+          `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.email || user?.id || "user"}`,
+        );
+      }
+    };
+
+    fetchUserProfileImage();
+  }, [user]);
 
   useEffect(() => {
     const fetchProfile = async () => {
-      if (!userId) return;
+      if (!userId) {
+        toast({
+          title: "Fehler",
+          description: "Keine Benutzer-ID angegeben",
+          variant: "destructive",
+        });
+        return;
+      }
 
       try {
         setLoading(true);
+        // Profil des Benutzers abrufen
         const { data, error } = await supabase
           .from("profiles")
           .select("*")
@@ -57,14 +100,19 @@ const UserProfileScreen: React.FC<UserProfileScreenProps> = ({
           .single();
 
         if (error) {
-          console.error("Error fetching profile:", error);
+          console.error("Fehler beim Abrufen des Profils:", error);
+          toast({
+            title: "Fehler",
+            description: "Profil konnte nicht geladen werden",
+            variant: "destructive",
+          });
           return;
         }
 
         if (data) {
           setProfile({
             id: data.id,
-            name: data.name || "",
+            name: data.name || "Unbekannter Benutzer",
             location: data.location || "",
             email: data.show_email ? data.email : "",
             phone: data.show_phone ? data.phone : "",
@@ -75,56 +123,67 @@ const UserProfileScreen: React.FC<UserProfileScreenProps> = ({
           });
         }
 
-        // Check if current user is following this profile
+        // Follow-Status und Statistiken abrufen
         if (user) {
-          try {
-            // Check following status
-            const { data: followData, error: followError } = await supabase
+          // Prüfen, ob der aktuelle Benutzer diesem Profil folgt
+          const { data: followData, error: followError } = await supabase
+            .from("follows")
+            .select("*")
+            .eq("follower_id", user.id)
+            .eq("followed_id", userId);
+
+          if (followError) {
+            console.error("Fehler beim Prüfen des Follow-Status:", followError);
+          } else {
+            setIsFollowing(followData && followData.length > 0);
+          }
+
+          // Anzahl der Follower abrufen
+          const { count: followersCountData, error: followersError } =
+            await supabase
               .from("follows")
-              .select("*")
-              .eq("follower_id", user.id)
+              .select("*", { count: "exact" })
               .eq("followed_id", userId);
 
-            if (!followError && followData && followData.length > 0) {
-              setIsFollowing(true);
-            } else {
-              setIsFollowing(false);
-            }
+          if (followersError) {
+            console.error(
+              "Fehler beim Abrufen der Follower-Anzahl:",
+              followersError,
+            );
+          } else {
+            setFollowersCount(followersCountData || 0);
+          }
 
-            // Get followers count
-            const { count: followersCountData, error: followersError } =
-              await supabase
-                .from("follows")
-                .select("*", { count: "exact" })
-                .eq("followed_id", userId);
+          // Anzahl der gefolgten Benutzer abrufen
+          const { count: followingCountData, error: followingError } =
+            await supabase
+              .from("follows")
+              .select("*", { count: "exact" })
+              .eq("follower_id", userId);
 
-            if (!followersError) {
-              setFollowersCount(followersCountData || 0);
-            }
-
-            // Get following count
-            const { count: followingCountData, error: followingError } =
-              await supabase
-                .from("follows")
-                .select("*", { count: "exact" })
-                .eq("follower_id", userId);
-
-            if (!followingError) {
-              setFollowingCount(followingCountData || 0);
-            }
-          } catch (error) {
-            console.error("Error checking follow status:", error);
+          if (followingError) {
+            console.error(
+              "Fehler beim Abrufen der Following-Anzahl:",
+              followingError,
+            );
+          } else {
+            setFollowingCount(followingCountData || 0);
           }
         }
       } catch (error) {
-        console.error("Error:", error);
+        console.error("Allgemeiner Fehler beim Laden des Profils:", error);
+        toast({
+          title: "Fehler",
+          description: "Ein unerwarteter Fehler ist aufgetreten",
+          variant: "destructive",
+        });
       } finally {
         setLoading(false);
       }
     };
 
     fetchProfile();
-  }, [userId, user]);
+  }, [userId, user, toast]);
 
   useEffect(() => {
     const fetchUserPosts = async () => {
@@ -132,7 +191,7 @@ const UserProfileScreen: React.FC<UserProfileScreenProps> = ({
 
       try {
         setLoadingPosts(true);
-        // Fetch posts by this user
+        // Posts des Benutzers abrufen
         const { data: postsData, error } = await supabase
           .from("posts")
           .select("*")
@@ -140,7 +199,12 @@ const UserProfileScreen: React.FC<UserProfileScreenProps> = ({
           .order("created_at", { ascending: false });
 
         if (error) {
-          console.error("Error fetching user posts:", error);
+          console.error("Fehler beim Abrufen der Posts:", error);
+          toast({
+            title: "Fehler",
+            description: "Posts konnten nicht geladen werden",
+            variant: "destructive",
+          });
           return;
         }
 
@@ -150,22 +214,19 @@ const UserProfileScreen: React.FC<UserProfileScreenProps> = ({
           return;
         }
 
-        // Format posts
+        // Posts formatieren
         const formattedPosts = await Promise.all(
           postsData.map(async (post) => {
-            // Get comments count
             const { count: commentsCount } = await supabase
               .from("comments")
               .select("id", { count: "exact" })
               .eq("post_id", post.id);
 
-            // Get likes count
             const { count: likesCount } = await supabase
               .from("likes")
               .select("id", { count: "exact" })
               .eq("post_id", post.id);
 
-            // Check if current user liked this post
             let isLiked = false;
             if (user) {
               const { data: likeData } = await supabase
@@ -201,82 +262,83 @@ const UserProfileScreen: React.FC<UserProfileScreenProps> = ({
 
         setUserPosts(formattedPosts);
       } catch (error) {
-        console.error("Error fetching user posts:", error);
+        console.error("Fehler beim Laden der Posts:", error);
+        toast({
+          title: "Fehler",
+          description: "Ein Fehler ist beim Laden der Posts aufgetreten",
+          variant: "destructive",
+        });
       } finally {
         setLoadingPosts(false);
       }
     };
 
     fetchUserPosts();
-  }, [userId, user]);
+  }, [userId, user, toast]);
 
   const handleFollow = async () => {
-    if (!user || user.id === userId) return;
+    if (!user || user.id === userId) {
+      toast({
+        title: "Fehler",
+        description:
+          "Du kannst dir selbst nicht folgen oder bist nicht eingeloggt",
+        variant: "destructive",
+      });
+      return;
+    }
 
     setFollowLoading(true);
     try {
       if (isFollowing) {
-        // Unfollow - first check if the follow relationship exists
-        const { data: followData } = await supabase
+        // Unfollow
+        console.log(`Versuche, ${userId} zu entfolgen...`);
+        const { error: deleteError } = await supabase
           .from("follows")
-          .select("*")
+          .delete()
           .eq("follower_id", user.id)
           .eq("followed_id", userId);
 
-        if (followData && followData.length > 0) {
-          const { error } = await supabase
-            .from("follows")
-            .delete()
-            .eq("follower_id", user.id)
-            .eq("followed_id", userId);
-
-          if (error) {
-            console.error("Error unfollowing:", error);
-            throw error;
-          }
-
-          setIsFollowing(false);
-          setFollowersCount((prev) => Math.max(0, prev - 1));
-          toast({
-            title: "Unfollowed",
-            description: `You are no longer following ${profile?.name}`,
-          });
+        if (deleteError) {
+          console.error("Fehler beim Entfolgen:", deleteError);
+          throw deleteError;
         }
+
+        setIsFollowing(false);
+        setFollowersCount((prev) => Math.max(0, prev - 1));
+        toast({
+          title: "Entfolgt",
+          description: `Du folgst ${profile?.name} nicht mehr`,
+        });
       } else {
-        // Follow - first check if the follow relationship already exists
-        const { data: existingFollow } = await supabase
+        // Follow
+        console.log(`Versuche, ${userId} zu folgen...`);
+        const followData = {
+          follower_id: user.id,
+          followed_id: userId,
+          created_at: new Date().toISOString(),
+        };
+
+        const { error: insertError } = await supabase
           .from("follows")
-          .select("*")
-          .eq("follower_id", user.id)
-          .eq("followed_id", userId);
+          .insert(followData);
 
-        if (!existingFollow || existingFollow.length === 0) {
-          const followData = {
-            follower_id: user.id,
-            followed_id: userId,
-            created_at: new Date().toISOString(),
-          };
-
-          const { error } = await supabase.from("follows").insert(followData);
-
-          if (error) {
-            console.error("Error following:", error);
-            throw error;
-          }
-
-          setIsFollowing(true);
-          setFollowersCount((prev) => prev + 1);
-          toast({
-            title: "Following",
-            description: `You are now following ${profile?.name}`,
-          });
+        if (insertError) {
+          console.error("Fehler beim Folgen:", insertError);
+          throw insertError;
         }
+
+        setIsFollowing(true);
+        setFollowersCount((prev) => prev + 1);
+        toast({
+          title: "Folge",
+          description: `Du folgst jetzt ${profile?.name}`,
+        });
       }
     } catch (error) {
-      console.error("Error updating follow status:", error);
+      console.error("Fehler beim Aktualisieren des Follow-Status:", error);
       toast({
-        title: "Error",
-        description: "Failed to update follow status",
+        title: "Fehler",
+        description: "Follow-Status konnte nicht aktualisiert werden",
         variant: "destructive",
       });
     } finally {
@@ -285,9 +347,15 @@ const UserProfileScreen: React.FC<UserProfileScreenProps> = ({
   };
 
   const handleLike = async (postId: string) => {
-    if (!user) return;
+    if (!user) {
+      toast({
+        title: "Fehler",
+        description: "Du musst eingeloggt sein, um zu liken",
+        variant: "destructive",
+      });
+      return;
+    }
 
-    // Find the post and toggle its like status
     const updatedPosts = [...userPosts];
     const postIndex = updatedPosts.findIndex((p) => p.id === postId);
 
@@ -296,7 +364,6 @@ const UserProfileScreen: React.FC<UserProfileScreenProps> = ({
     const post = updatedPosts[postIndex];
     const newIsLiked = !post.isLiked;
 
-    // Update UI optimistically
     updatedPosts[postIndex] = {
       ...post,
       isLiked: newIsLiked,
@@ -307,23 +374,25 @@ const UserProfileScreen: React.FC<UserProfileScreenProps> = ({
 
     try {
       if (newIsLiked) {
-        // Add like to database
         await supabase.from("likes").insert({
           post_id: postId,
           user_id: user.id,
           created_at: new Date().toISOString(),
         });
       } else {
-        // Remove like from database
         await supabase
           .from("likes")
           .delete()
           .match({ post_id: postId, user_id: user.id });
       }
     } catch (error) {
-      console.error("Error updating like:", error);
-      // Revert UI change on error
+      console.error("Fehler beim Aktualisieren des Likes:", error);
       setUserPosts(userPosts);
+      toast({
+        title: "Fehler",
+        description: "Like konnte nicht gespeichert werden",
+        variant: "destructive",
+      });
     }
   };
 
@@ -336,7 +405,7 @@ const UserProfileScreen: React.FC<UserProfileScreenProps> = ({
     return (
       <div className="flex flex-col min-h-screen bg-white dark:bg-[#0d1015] rounded-[40px] items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-        <p className="mt-4 text-gray-500">Loading profile...</p>
+        <p className="mt-4 text-gray-500">Profil wird geladen...</p>
       </div>
     );
   }
@@ -351,11 +420,11 @@ const UserProfileScreen: React.FC<UserProfileScreenProps> = ({
         >
           <ArrowLeft className="h-6 w-6" />
         </button>
-        <h1 className="text-xl font-semibold">Profile</h1>
-        <div className="w-12 h-12"></div> {/* Empty div for spacing */}
+        <h1 className="text-xl font-semibold">Profil</h1>
+        <div className="w-12 h-12"></div>
       </div>
 
-      {/* Profile Info */}
+      {/* Profil-Informationen */}
       <div className="flex flex-col items-center px-6 py-8">
         <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-lg">
           <img
@@ -380,11 +449,11 @@ const UserProfileScreen: React.FC<UserProfileScreenProps> = ({
           </div>
           <div className="text-center">
             <p className="font-bold">{followersCount}</p>
-            <p className="text-sm text-gray-500">Followers</p>
+            <p className="text-sm text-gray-500">Follower</p>
           </div>
           <div className="text-center">
             <p className="font-bold">{followingCount}</p>
-            <p className="text-sm text-gray-500">Following</p>
+            <p className="text-sm text-gray-500">Folge ich</p>
           </div>
         </div>
 
@@ -401,12 +470,12 @@ const UserProfileScreen: React.FC<UserProfileScreenProps> = ({
               ) : isFollowing ? (
                 <>
                   <UserCheck className="h-4 w-4" />
-                  Following
+                  Folge ich
                 </>
               ) : (
                 <>
                   <UserPlus className="h-4 w-4" />
-                  Follow
+                  Folgen
                 </>
               )}
             </Button>
@@ -416,7 +485,7 @@ const UserProfileScreen: React.FC<UserProfileScreenProps> = ({
               className="flex items-center gap-2"
             >
               <MessageSquare className="h-4 w-4" />
-              Message
+              Nachricht
             </Button>
           </div>
         )}
@@ -435,7 +504,7 @@ const UserProfileScreen: React.FC<UserProfileScreenProps> = ({
         </div>
       </div>
 
-      {/* User Posts */}
+      {/* Benutzer-Posts */}
       <div className="flex-1 px-4 py-6">
         <h2 className="text-xl font-semibold mb-4">Posts</h2>
 
@@ -509,60 +578,76 @@ const UserProfileScreen: React.FC<UserProfileScreenProps> = ({
           </div>
         ) : (
           <div className="text-center py-10 bg-white dark:bg-gray-800 rounded-lg shadow">
-            <p className="text-gray-500 dark:text-gray-400">No posts yet.</p>
+            <p className="text-gray-500 dark:text-gray-400">
+              Noch keine Posts.
+            </p>
           </div>
         )}
       </div>
 
       {/* Bottom Navigation Bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 flex justify-around items-center p-2 z-20 shadow-lg">
+      <div className="fixed bottom-4 left-4 right-4 bg-cyan-200/30 dark:bg-cyan-900/30 backdrop-blur-lg border border-cyan-300/40 dark:border-cyan-800/40 flex justify-between items-center p-2 z-20 shadow-xl rounded-[40px]">
         <Button
           variant="ghost"
           size="icon"
-          className="flex items-center justify-center h-14 w-16"
+          className="flex items-center justify-center h-14 w-14"
           onClick={() => navigate("/feed")}
         >
-          <HomeIcon className="h-6 w-6" />
+          <HomeIcon className="h-6 w-6 text-[#00b4d8]" />
         </Button>
 
         <Button
           variant="ghost"
           size="icon"
-          className="flex items-center justify-center h-14 w-16"
+          className="flex items-center justify-center h-14 w-14"
           onClick={() => navigate("/search")}
         >
-          <Search className="h-6 w-6" />
-        </Button>
-
-        {/* Create Post Button (Centered) */}
-        <Button
-          onClick={() => navigate("/create-post")}
-          className="flex items-center justify-center h-12 w-12 rounded-full hover:bg-emerald-500 shadow-lg bg-[#00b4d8] absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2"
-        >
-          <Plus className="h-6 w-6" />
+          <Search className="h-6 w-6 text-gray-600 dark:text-gray-300" />
         </Button>
 
         <Button
           variant="ghost"
           size="icon"
-          className="flex items-center justify-center h-14 w-16"
+          className="flex items-center justify-center h-14 w-14 bg-[#00b4d8] rounded-full"
+          onClick={() => navigate("/create-post")}
+        >
+          <Plus className="h-6 w-6 text-white" />
+        </Button>
+
+        <Button
+          variant="ghost"
+          size="icon"
+          className="flex h-14 w-14 justify-center items-center relative"
           onClick={() => navigate("/chats")}
         >
-          <MessageSquare className="h-6 w-6" />
+          <MessageSquare className="h-6 w-6 text-gray-600 dark:text-gray-300" />
+          {hasUnreadMessages && (
+            <span className="absolute top-2 right-2 h-2 w-2 bg-red-500 rounded-full"></span>
+          )}
         </Button>
 
         <Button
           variant="ghost"
           size="icon"
-          className="flex items-center justify-center h-14 w-16"
+          className="flex items-center justify-center h-14 w-14"
           onClick={() => navigate("/profile")}
         >
-          <User className="h-6 w-6" />
+          {userProfileImage ? (
+            <Avatar className="h-8 w-8 border-2 border-[#00b4d8]/20">
+              <AvatarImage src={userProfileImage} alt="User Profile" />
+              <AvatarFallback className="bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
+                {user?.user_metadata?.name?.charAt(0).toUpperCase() ||
+                  user?.email?.charAt(0).toUpperCase() ||
+                  "U"}
+              </AvatarFallback>
+            </Avatar>
+          ) : (
+            <User className="h-6 w-6 text-gray-600 dark:text-gray-300" />
+          )}
         </Button>
       </div>
-
       {/* Add padding at the bottom to account for the navigation bar */}
-      <div className="h-16"></div>
+      <div className="h-20"></div>
     </div>
   );
 };

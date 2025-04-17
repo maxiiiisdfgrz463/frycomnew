@@ -28,33 +28,14 @@ import {
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 import { formatDistanceToNow } from "date-fns";
-import { motion, AnimatePresence } from "framer-motion"; // Für die Like-Animation
+import { motion, AnimatePresence } from "framer-motion";
 import CommentSection from "./CommentSection";
 
-interface FeedScreenProps {
-  onCreatePost?: () => void;
-  onProfile?: () => void;
-  onNotifications?: () => void;
-  posts?: Array<{
-    id: string;
-    author: {
-      name: string;
-      username: string;
-      avatar: string;
-    };
-    content?: string;
-    media?: {
-      type: "image" | "video";
-      src: string;
-      alt?: string;
-    };
-    timestamp: string;
-    likes: number;
-    comments: number;
-    shares: number;
-    isLiked: boolean;
-  }>;
-}
+// Array für zufällige Winkel der Herzen
+const getRandomAngle = () => Math.random() * 360; // Winkel zwischen 0° und 360°
+const getRandomDistance = () => Math.random() * 100 + 50; // Entfernung zwischen 50 und 150 Pixel
+const getRandomDelay = () => Math.random() * 0.3; // Zufällige Verzögerung zwischen 0 und 0.3 Sekunden
+const getRandomScale = () => Math.random() * 0.5 + 1.5; // Zufällige Skalierung zwischen 1.5 und 2
 
 const FeedScreen: React.FC<FeedScreenProps> = ({
   onCreatePost = () => {},
@@ -75,11 +56,13 @@ const FeedScreen: React.FC<FeedScreenProps> = ({
   const [searchQuery, setSearchQuery] = useState("");
   const [userProfileImage, setUserProfileImage] = useState<string | null>(null);
   const [likeAnimation, setLikeAnimation] = useState<{
-    [key: string]: boolean;
-  }>({}); // Zustand für die Like-Animation
+    [key: string]: { x: number; y: number } | null;
+  }>({}); // Zustand für die Like-Animation mit Klick-Position
   const [lastTap, setLastTap] = useState<{ [key: string]: number }>({}); // Für Double-Tap-Erkennung
 
-  // Fetch the user's profile image from the profiles table
+  // Audio-Objekt für den Like-Sound
+  const [likeSound] = useState(() => new Audio("/sounds/like-sound.mp3")); // Stelle sicher, dass der Pfad korrekt ist
+
   useEffect(() => {
     const fetchUserProfileImage = async () => {
       if (!user) return;
@@ -234,9 +217,13 @@ const FeedScreen: React.FC<FeedScreenProps> = ({
     const post = updatedPosts[postIndex];
     const newIsLiked = !post.isLiked;
 
-    // Nur Animation auslösen, wenn der Post geliked wird (nicht unliked)
+    // Nur Animation und Sound auslösen, wenn der Post geliked wird
     if (!post.isLiked) {
-      setLikeAnimation((prev) => ({ ...prev, [postId]: true }));
+      // Animation wird durch handleDoubleTap gesteuert, daher hier nicht gesetzt
+      likeSound.currentTime = 0; // Sound zurücksetzen
+      likeSound.play().catch((error) => {
+        console.error("Error playing like sound:", error);
+      });
     }
 
     updatedPosts[postIndex] = {
@@ -265,17 +252,36 @@ const FeedScreen: React.FC<FeedScreenProps> = ({
     }
   };
 
-  // Double-Tap Handler
-  const handleDoubleTap = (postId: string) => {
+  const handleDoubleTap = (
+    postId: string,
+    event: React.MouseEvent | React.TouchEvent,
+  ) => {
     const now = Date.now();
     const lastTapTime = lastTap[postId] || 0;
-    const DOUBLE_TAP_THRESHOLD = 300; // Zeitfenster für Double-Tap (in Millisekunden)
+    const DOUBLE_TAP_THRESHOLD = 300;
 
     if (now - lastTapTime < DOUBLE_TAP_THRESHOLD) {
-      // Double-Tap erkannt
       const post = posts.find((p) => p.id === postId);
       if (post && !post.isLiked) {
-        // Nur liken, wenn der Post noch nicht geliked ist
+        // Erfasse die Klick-Position relativ zum Post-Container
+        const target = event.currentTarget as HTMLDivElement;
+        const rect = target.getBoundingClientRect();
+        let clientX, clientY;
+        if ("touches" in event && event.touches.length > 0) {
+          clientX = event.touches[0].clientX;
+          clientY = event.touches[0].clientY;
+        } else if ("clientX" in event) {
+          clientX = event.clientX;
+          clientY = event.clientY;
+        } else {
+          console.warn("Unable to determine click/touch coordinates");
+          return;
+        }
+        // Berechne die Position relativ zum Post-Container
+        const x = clientX - rect.left;
+        const y = clientY - rect.top;
+        console.log(`Double-tap at Post ${postId}: x=${x}, y=${y}`); // Debugging
+        setLikeAnimation((prev) => ({ ...prev, [postId]: { x, y } }));
         handleLike(postId);
       }
     }
@@ -419,25 +425,47 @@ const FeedScreen: React.FC<FeedScreenProps> = ({
             <div
               key={post.id}
               className={`relative bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden ${post.isOwnPost ? "border-l-4 border-[#00b4d8]" : ""}`}
-              onClick={() => handleDoubleTap(post.id)} // Double-Tap-Handler hinzufügen
+              onClick={(e) => handleDoubleTap(post.id, e)}
             >
-              {/* Like-Animation */}
+              {/* Like-Animation (sprudelnde Herzen) */}
               <AnimatePresence>
                 {likeAnimation[post.id] && (
                   <motion.div
-                    className="absolute inset-0 flex items-center justify-center pointer-events-none"
-                    initial={{ opacity: 0, scale: 0 }}
-                    animate={{ opacity: 1, scale: 2 }}
-                    exit={{ opacity: 0, scale: 2.5 }}
-                    transition={{ duration: 0.5 }}
-                    onAnimationComplete={() =>
-                      setLikeAnimation((prev) => ({
-                        ...prev,
-                        [post.id]: false,
-                      }))
-                    }
+                    className="absolute inset-0 pointer-events-none"
+                    style={{ transformOrigin: "top left" }}
                   >
-                    <Heart className="h-16 w-16 text-red-500 fill-red-500" />
+                    {[...Array(8)].map((_, index) => {
+                      const angle = getRandomAngle();
+                      const distance = getRandomDistance();
+                      const delay = getRandomDelay();
+                      const scale = getRandomScale();
+                      return (
+                        <motion.div
+                          key={index}
+                          className="absolute"
+                          style={{
+                            left: likeAnimation[post.id]?.x ?? 0,
+                            top: likeAnimation[post.id]?.y ?? 0,
+                          }}
+                          initial={{ opacity: 1, scale: 0 }}
+                          animate={{
+                            opacity: 0,
+                            scale: [0, scale, scale * 0.8],
+                            x: Math.cos((angle * Math.PI) / 180) * distance,
+                            y: Math.sin((angle * Math.PI) / 180) * distance,
+                          }}
+                          transition={{ duration: 1, delay }}
+                          onAnimationComplete={() =>
+                            setLikeAnimation((prev) => ({
+                              ...prev,
+                              [post.id]: null,
+                            }))
+                          }
+                        >
+                          <Heart className="h-12 w-12 text-red-500 fill-red-500" />
+                        </motion.div>
+                      );
+                    })}
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -656,3 +684,28 @@ const FeedScreen: React.FC<FeedScreenProps> = ({
 };
 
 export default FeedScreen;
+
+interface FeedScreenProps {
+  onCreatePost?: () => void;
+  onProfile?: () => void;
+  onNotifications?: () => void;
+  posts?: Array<{
+    id: string;
+    author: {
+      name: string;
+      username: string;
+      avatar: string;
+    };
+    content?: string;
+    media?: {
+      type: "image" | "video";
+      src: string;
+      alt?: string;
+    };
+    timestamp: string;
+    likes: number;
+    comments: number;
+    shares: number;
+    isLiked: boolean;
+  }>;
+}
