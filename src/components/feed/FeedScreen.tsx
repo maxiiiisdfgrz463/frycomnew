@@ -32,10 +32,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import CommentSection from "./CommentSection";
 
 // Array für zufällige Winkel der Herzen
-const getRandomAngle = () => Math.random() * 360; // Winkel zwischen 0° und 360°
-const getRandomDistance = () => Math.random() * 100 + 50; // Entfernung zwischen 50 und 150 Pixel
-const getRandomDelay = () => Math.random() * 0.3; // Zufällige Verzögerung zwischen 0 und 0.3 Sekunden
-const getRandomScale = () => Math.random() * 0.5 + 1.5; // Zufällige Skalierung zwischen 1.5 und 2
+const getRandomAngle = () => Math.random() * 360;
+const getRandomDistance = () => Math.random() * 100 + 50;
+const getRandomDelay = () => Math.random() * 0.3;
+const getRandomScale = () => Math.random() * 0.5 + 1.5;
 
 const FeedScreen: React.FC<FeedScreenProps> = ({
   onCreatePost = () => {},
@@ -57,11 +57,10 @@ const FeedScreen: React.FC<FeedScreenProps> = ({
   const [userProfileImage, setUserProfileImage] = useState<string | null>(null);
   const [likeAnimation, setLikeAnimation] = useState<{
     [key: string]: { x: number; y: number } | null;
-  }>({}); // Zustand für die Like-Animation mit Klick-Position
-  const [lastTap, setLastTap] = useState<{ [key: string]: number }>({}); // Für Double-Tap-Erkennung
+  }>({});
+  const [lastTap, setLastTap] = useState<{ [key: string]: number }>({});
 
-  // Audio-Objekt für den Like-Sound
-  const [likeSound] = useState(() => new Audio("/sounds/like-sound.mp3")); // Stelle sicher, dass der Pfad korrekt ist
+  const [likeSound] = useState(() => new Audio("/sounds/like-sound.mp3"));
 
   useEffect(() => {
     const fetchUserProfileImage = async () => {
@@ -139,7 +138,7 @@ const FeedScreen: React.FC<FeedScreenProps> = ({
           postsData.map(async (post) => {
             const { data: authorData } = await supabase
               .from("profiles")
-              .select("name, avatar_url")
+              .select("name, avatar_url, has_badge")
               .eq("id", post.user_id)
               .single();
 
@@ -165,6 +164,7 @@ const FeedScreen: React.FC<FeedScreenProps> = ({
                 avatar:
                   authorData?.avatar_url ||
                   `https://api.dicebear.com/7.x/avataaars/svg?seed=${post.id}`,
+                has_badge: authorData?.has_badge || false,
               },
               content: post.content,
               media: post.media_url
@@ -217,10 +217,8 @@ const FeedScreen: React.FC<FeedScreenProps> = ({
     const post = updatedPosts[postIndex];
     const newIsLiked = !post.isLiked;
 
-    // Nur Animation und Sound auslösen, wenn der Post geliked wird
     if (!post.isLiked) {
-      // Animation wird durch handleDoubleTap gesteuert, daher hier nicht gesetzt
-      likeSound.currentTime = 0; // Sound zurücksetzen
+      likeSound.currentTime = 0;
       likeSound.play().catch((error) => {
         console.error("Error playing like sound:", error);
       });
@@ -263,7 +261,6 @@ const FeedScreen: React.FC<FeedScreenProps> = ({
     if (now - lastTapTime < DOUBLE_TAP_THRESHOLD) {
       const post = posts.find((p) => p.id === postId);
       if (post && !post.isLiked) {
-        // Erfasse die Klick-Position relativ zum Post-Container
         const target = event.currentTarget as HTMLDivElement;
         const rect = target.getBoundingClientRect();
         let clientX, clientY;
@@ -277,10 +274,8 @@ const FeedScreen: React.FC<FeedScreenProps> = ({
           console.warn("Unable to determine click/touch coordinates");
           return;
         }
-        // Berechne die Position relativ zum Post-Container
         const x = clientX - rect.left;
         const y = clientY - rect.top;
-        console.log(`Double-tap at Post ${postId}: x=${x}, y=${y}`); // Debugging
         setLikeAnimation((prev) => ({ ...prev, [postId]: { x, y } }));
         handleLike(postId);
       }
@@ -424,7 +419,11 @@ const FeedScreen: React.FC<FeedScreenProps> = ({
           posts.map((post) => (
             <div
               key={post.id}
-              className={`relative bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden ${post.isOwnPost ? "border-l-4 border-[#00b4d8]" : ""}`}
+              className={`relative rounded-lg shadow overflow-hidden ${
+                post.author.has_badge
+                  ? "bg-gradient-to-b from-[#00b4d8]/10 via-[#e6f7fa] to-white dark:from-[#00b4d8]/20 dark:via-[#1e3a4f] dark:to-gray-800"
+                  : "bg-white dark:bg-gray-800"
+              } ${post.isOwnPost ? "border-l-4 border-[#00b4d8]" : ""}`}
               onClick={(e) => handleDoubleTap(post.id, e)}
             >
               {/* Like-Animation (sprudelnde Herzen) */}
@@ -486,16 +485,46 @@ const FeedScreen: React.FC<FeedScreenProps> = ({
 
                 <div className="flex-1">
                   <div className="flex justify-between">
-                    <div>
+                    <div className="flex items-center">
                       <h3
                         className="font-semibold cursor-pointer hover:underline"
                         onClick={() => navigate(`/user/${post.user_id}`)}
                       >
                         {post.author.name}
                       </h3>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
-                        {post.timestamp}
-                      </p>
+                      {post.author.has_badge && (
+                        <svg
+                          width="24"
+                          height="24"
+                          viewBox="0 0 1750 1749"
+                          className="ml-3 text-[#00b4d8]"
+                          xmlns="http://www.w3.org/2000/svg"
+                          aria-label="User Badge"
+                        >
+                          <path
+                            d="M796.834 76.1716C840.327 33.7885 909.673 33.7885 953.166 76.1716L989.385 111.467C1019.45 140.768 1063.38 150.792 1103.19 137.434L1151.16 121.335C1208.74 102.011 1271.23 132.104 1292.02 189.172L1309.3 236.593C1323.68 276.052 1358.92 304.152 1400.59 309.379L1450.73 315.667C1511.02 323.228 1554.28 377.478 1548.24 437.935L1543.23 488.056C1539.05 529.863 1558.62 570.492 1593.92 593.284L1636.27 620.635C1687.33 653.604 1702.78 721.275 1671.08 773.132L1644.82 816.091C1622.91 851.947 1622.91 897.053 1644.82 932.909L1671.08 975.868C1702.78 1027.72 1687.33 1095.4 1636.27 1128.37L1593.92 1155.72C1558.62 1178.51 1539.05 1219.14 1543.23 1260.94L1548.24 1311.06C1554.28 1371.52 1511.02 1425.77 1450.73 1433.33L1400.59 1439.62C1358.92 1444.85 1323.68 1472.95 1309.3 1512.41L1292.02 1559.83C1271.23 1616.9 1208.74 1646.99 1151.16 1627.66L1103.19 1611.57C1063.38 1598.21 1019.45 1608.23 989.385 1637.53L953.166 1672.83C909.673 1715.21 840.327 1715.21 796.834 1672.83L760.615 1637.53C730.547 1608.23 686.617 1598.21 646.815 1611.57L598.845 1627.66C541.263 1646.99 478.772 1616.9 457.979 1559.83L440.7 1512.41C426.322 1472.95 391.077 1444.85 349.405 1439.62L299.267 1433.33C238.98 1425.77 195.717 1371.52 201.76 1311.06L206.769 1260.94C210.948 1219.14 191.377 1178.51 156.081 1155.72L113.726 1128.37C62.6693 1095.4 47.2234 1027.72 78.9185 975.868L105.175 932.909C127.09 897.053 127.09 851.947 105.175 816.091L78.9185 773.132C47.2235 721.275 62.6692 653.604 113.725 620.635L156.081 593.284C191.377 570.492 210.948 529.863 206.77 488.056L201.76 437.935C195.717 377.478 238.98 323.228 299.267 315.667L349.405 309.379C391.077 304.152 426.322 276.052 440.7 236.593L457.979 189.172C478.772 132.104 541.263 102.011 598.845 121.335L646.815 137.434C686.617 150.792 730.547 140.768 760.615 111.467L796.834 76.1716Z"
+                            fill="currentColor"
+                          />
+                          <rect
+                            x="623.883"
+                            y="1249.58"
+                            width="1092"
+                            height="180"
+                            rx="90"
+                            transform="rotate(-50 623.883 1249.58)"
+                            fill="white"
+                          />
+                          <rect
+                            x="422.796"
+                            y="853.031"
+                            width="582"
+                            height="180"
+                            rx="90"
+                            transform="rotate(40 422.796 853.031)"
+                            fill="white"
+                          />
+                        </svg>
+                      )}
                     </div>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -677,7 +706,6 @@ const FeedScreen: React.FC<FeedScreenProps> = ({
           <User className="h-6 w-6 text-gray-600 dark:text-gray-300" />
         </Button>
       </div>
-      {/* Add padding at the bottom to account for the navigation bar */}
       <div className="h-20"></div>
     </div>
   );
@@ -695,6 +723,7 @@ interface FeedScreenProps {
       name: string;
       username: string;
       avatar: string;
+      has_badge?: boolean;
     };
     content?: string;
     media?: {
