@@ -17,6 +17,8 @@ import {
   User,
   Trash2,
   Flag,
+  Camera,
+  FileText,
 } from "lucide-react";
 import { useNotifications } from "@/routes";
 import {
@@ -25,6 +27,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import StoriesTable from "@/components/stories/StoriesTable";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 import { formatDistanceToNow } from "date-fns";
@@ -42,6 +45,7 @@ const FeedScreen: React.FC<FeedScreenProps> = ({
   onProfile = () => {},
   onNotifications = () => {},
 }) => {
+  const [createMenuOpen, setCreateMenuOpen] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
   const { hasUnreadMessages, hasUnreadNotifications } = useNotifications();
@@ -365,12 +369,38 @@ const FeedScreen: React.FC<FeedScreenProps> = ({
                 <span className="absolute top-0 right-0 h-3 w-3 bg-red-500 rounded-full"></span>
               )}
             </button>
-            <button
-              className="h-10 w-10 flex items-center justify-center"
-              onClick={onCreatePost}
+            <DropdownMenu
+              open={createMenuOpen}
+              onOpenChange={setCreateMenuOpen}
             >
-              <Plus className="h-6 w-6 text-gray-600 dark:text-gray-300" />
-            </button>
+              <DropdownMenuTrigger asChild>
+                <button className="h-10 w-10 flex items-center justify-center">
+                  <Plus className="h-6 w-6 text-gray-600 dark:text-gray-300" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem
+                  onClick={() => {
+                    setCreateMenuOpen(false);
+                    onCreatePost();
+                  }}
+                  className="cursor-pointer"
+                >
+                  <FileText className="mr-2 h-4 w-4" />
+                  <span>Create Post</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => {
+                    setCreateMenuOpen(false);
+                    navigate("/stories");
+                  }}
+                  className="cursor-pointer"
+                >
+                  <Camera className="mr-2 h-4 w-4" />
+                  <span>Create Story</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Avatar
               className="h-10 w-10 border-2 border-[#00b4d8]/20 hover:scale-105 transition-transform duration-200 cursor-pointer"
               onClick={onProfile}
@@ -399,6 +429,16 @@ const FeedScreen: React.FC<FeedScreenProps> = ({
           />
         </div>
       </div>
+      {/* Stories */}
+      <div className="px-4 pt-4 pb-2 overflow-x-auto">
+        <h2 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-3">
+          Stories
+        </h2>
+        <div className="flex space-x-4 pb-2 overflow-x-auto scrollbar-hide">
+          <StoriesTable />
+        </div>
+      </div>
+
       {/* Feed */}
       <div className="flex-1 p-4 space-y-4">
         {searchQuery && (
@@ -680,7 +720,7 @@ const FeedScreen: React.FC<FeedScreenProps> = ({
           variant="ghost"
           size="icon"
           className="flex items-center justify-center h-14 w-14 bg-[#00b4d8] rounded-full"
-          onClick={onCreatePost}
+          onClick={() => setCreateMenuOpen(true)}
         >
           <Plus className="h-6 w-6 text-white" />
         </Button>

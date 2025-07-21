@@ -22,7 +22,7 @@ import { formatDistanceToNow } from "date-fns";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/components/ui/use-toast";
-import { useNotifications } from "@/routes"; // Neu: Für Benachrichtigungsstatus
+import { useNotifications } from "@/routes"; // For notification status
 
 interface UserProfileScreenProps {
   userId: string;

@@ -17,6 +17,8 @@ import SearchScreen from "@/components/search/SearchScreen";
 import Chatbot from "@/components/chatbot/Chatbot";
 import PrivateChat from "@/components/chat/PrivateChat";
 import ChatList from "@/components/chat/ChatList";
+import StoriesScreen from "@/components/stories/StoriesScreen";
+import StoryViewer from "@/components/stories/StoryViewer";
 import { supabase } from "@/lib/supabase";
 
 // Create notification context
@@ -210,6 +212,7 @@ const AppRoutes: React.FC = () => {
   const navigateToChatbot = () => navigate("/chatbot");
   const navigateToChats = () => navigate("/chats");
   const navigateToUserProfile = (userId: string) => navigate(`/user/${userId}`);
+  const navigateToStories = () => navigate("/stories");
 
   if (isLoading) {
     return (
@@ -372,6 +375,29 @@ const AppRoutes: React.FC = () => {
               <Navigate to="/login" replace />
             ) : (
               <PrivateChat onBack={navigateToChats} />
+            )
+          }
+        />
+        <Route
+          path="/stories"
+          element={
+            !isAuthenticated ? (
+              <Navigate to="/login" replace />
+            ) : (
+              <StoriesScreen onBack={navigateToFeed} />
+            )
+          }
+        />
+        <Route
+          path="/story/:userId"
+          element={
+            !isAuthenticated ? (
+              <Navigate to="/login" replace />
+            ) : (
+              <StoryViewer
+                userId={useParams().userId || ""}
+                onClose={navigateToFeed}
+              />
             )
           }
         />

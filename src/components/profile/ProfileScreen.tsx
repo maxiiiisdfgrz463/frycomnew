@@ -108,8 +108,8 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
               data.avatar_url ||
               `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email || user.id}`,
             bio: data.bio || "",
-            showEmail: data.show_email ?? false, // Use nullish coalescing for safety
-            showPhone: data.show_phone ?? false, // Use nullish coalescing for safety
+            showEmail: data.show_email ?? false,
+            showPhone: data.show_phone ?? false,
           });
         }
       } catch (error) {
@@ -297,6 +297,16 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
           Edit Profile
         </Button>
 
+        {/* Aktualisierter Button für Verifizierung */}
+        <Button
+          onClick={() => navigate("/verified")}
+          variant="outline"
+          className="mt-4 flex items-center gap-2 rounded-full border-[#00b4d8]/50 text-[#00b4d8] hover:bg-[#00b4d8]/10"
+        >
+          <User className="h-4 w-4" />
+          Verifiziert werden
+        </Button>
+
         <div className="w-full mt-6 space-y-4">
           {profile.showEmail && (
             <div className="flex items-center">
@@ -321,7 +331,6 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
       {/* User Posts */}
       <div className="flex-1 px-4 py-6">
         <h2 className="text-xl font-semibold mb-4">Your Posts</h2>
-
         {loadingPosts ? (
           <div className="flex justify-center items-center py-10">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -392,6 +401,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
             </p>
           </div>
         )}
+        Anything else?
       </div>
 
       {/* Bottom Navigation Bar */}
