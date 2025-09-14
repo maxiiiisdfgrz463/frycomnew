@@ -3,11 +3,11 @@ import ReactDOM from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 import { BrowserRouter } from "react-router-dom";
-import { TempoDevtools } from "tempo-devtools";
+/* import { TempoDevtools } from 'tempo-devtools'; [deprecated] */
 import { AuthProvider } from "./contexts/AuthContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 
-TempoDevtools.init();
+/* TempoDevtools.init() [deprecated] */;
 
 const basename = import.meta.env.BASE_URL;
 
