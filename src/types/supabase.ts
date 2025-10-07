@@ -41,6 +41,13 @@ export type Database = {
             referencedRelation: "comments"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "comment_likes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       comments: {
@@ -79,6 +86,13 @@ export type Database = {
             referencedRelation: "posts"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "comments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       follows: {
@@ -100,9 +114,24 @@ export type Database = {
           following_id?: string
           id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "follows_follower_id_fkey"
+            columns: ["follower_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "follows_following_id_fkey"
+            columns: ["following_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
-      post_likes: {
+      likes: {
         Row: {
           created_at: string | null
           id: string
@@ -123,10 +152,17 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "post_likes_post_id_fkey"
+            foreignKeyName: "likes_post_id_fkey"
             columns: ["post_id"]
             isOneToOne: false
             referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "likes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -139,9 +175,8 @@ export type Database = {
           id: string
           likes_count: number | null
           media_type: string | null
-          media_types: string[] | null
           media_url: string | null
-          media_urls: string[] | null
+          shares_count: number | null
           updated_at: string | null
           user_id: string
         }
@@ -152,9 +187,8 @@ export type Database = {
           id?: string
           likes_count?: number | null
           media_type?: string | null
-          media_types?: string[] | null
           media_url?: string | null
-          media_urls?: string[] | null
+          shares_count?: number | null
           updated_at?: string | null
           user_id: string
         }
@@ -165,9 +199,8 @@ export type Database = {
           id?: string
           likes_count?: number | null
           media_type?: string | null
-          media_types?: string[] | null
           media_url?: string | null
-          media_urls?: string[] | null
+          shares_count?: number | null
           updated_at?: string | null
           user_id?: string
         }
@@ -175,141 +208,131 @@ export type Database = {
       }
       private_messages: {
         Row: {
+          attachment_type: string | null
+          attachment_url: string | null
           content: string
           created_at: string | null
           id: string
           is_read: boolean | null
-          media_type: string | null
-          media_url: string | null
           receiver_id: string
           sender_id: string
+          updated_at: string | null
         }
         Insert: {
+          attachment_type?: string | null
+          attachment_url?: string | null
           content: string
           created_at?: string | null
           id?: string
           is_read?: boolean | null
-          media_type?: string | null
-          media_url?: string | null
           receiver_id: string
           sender_id: string
+          updated_at?: string | null
         }
         Update: {
+          attachment_type?: string | null
+          attachment_url?: string | null
           content?: string
           created_at?: string | null
           id?: string
           is_read?: boolean | null
-          media_type?: string | null
-          media_url?: string | null
           receiver_id?: string
           sender_id?: string
+          updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "private_messages_receiver_id_fkey"
+            columns: ["receiver_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "private_messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
           avatar_url: string | null
           bio: string | null
           created_at: string | null
-          email_notifications: boolean | null
+          email: string | null
           id: string
-          is_private: boolean | null
           location: string | null
           name: string | null
-          push_notifications: boolean | null
+          phone: string | null
+          show_email: boolean | null
+          show_phone: boolean | null
           updated_at: string | null
-          username: string | null
-          website: string | null
         }
         Insert: {
           avatar_url?: string | null
           bio?: string | null
           created_at?: string | null
-          email_notifications?: boolean | null
+          email?: string | null
           id: string
-          is_private?: boolean | null
           location?: string | null
           name?: string | null
-          push_notifications?: boolean | null
+          phone?: string | null
+          show_email?: boolean | null
+          show_phone?: boolean | null
           updated_at?: string | null
-          username?: string | null
-          website?: string | null
         }
         Update: {
           avatar_url?: string | null
           bio?: string | null
           created_at?: string | null
-          email_notifications?: boolean | null
+          email?: string | null
           id?: string
-          is_private?: boolean | null
           location?: string | null
           name?: string | null
-          push_notifications?: boolean | null
+          phone?: string | null
+          show_email?: boolean | null
+          show_phone?: boolean | null
           updated_at?: string | null
-          username?: string | null
-          website?: string | null
-        }
-        Relationships: []
-      }
-      push_notifications: {
-        Row: {
-          body: string
-          data: Json | null
-          id: string
-          sent_at: string | null
-          title: string
-          user_id: string
-        }
-        Insert: {
-          body: string
-          data?: Json | null
-          id?: string
-          sent_at?: string | null
-          title: string
-          user_id: string
-        }
-        Update: {
-          body?: string
-          data?: Json | null
-          id?: string
-          sent_at?: string | null
-          title?: string
-          user_id?: string
         }
         Relationships: []
       }
       stories: {
         Row: {
-          content: string | null
           created_at: string | null
-          expires_at: string
+          expires_at: string | null
           id: string
           media_type: string
           media_url: string
           user_id: string
-          viewed_by: Json | null
         }
         Insert: {
-          content?: string | null
           created_at?: string | null
-          expires_at: string
+          expires_at?: string | null
           id?: string
           media_type: string
           media_url: string
           user_id: string
-          viewed_by?: Json | null
         }
         Update: {
-          content?: string | null
           created_at?: string | null
-          expires_at?: string
+          expires_at?: string | null
           id?: string
           media_type?: string
           media_url?: string
           user_id?: string
-          viewed_by?: Json | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "stories_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
