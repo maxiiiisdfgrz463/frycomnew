@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import {
   ArrowLeft,
   LogOut,
@@ -18,11 +20,13 @@ import {
   Plus,
   Search,
   Home as HomeIcon,
+  Bell,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 import EditProfileForm from "./EditProfileForm";
+import { useToast } from "@/components/ui/use-toast";
 
 interface ProfileScreenProps {
   onBack?: () => void;
@@ -35,6 +39,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
 }) => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [profile, setProfile] = useState({
     name: "",
@@ -47,6 +52,8 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
     showPhone: false,
   });
   const [loading, setLoading] = useState(true);
+  const [pushEnabled, setPushEnabled] = useState(false);
+  const [testingPush, setTestingPush] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -127,6 +134,81 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
       isMounted = false;
     };
   }, [user]);
+
+  // Check if push notifications are enabled
+  useEffect(() => {
+    if ("Notification" in window) {
+      setPushEnabled(Notification.permission === "granted");
+    }
+  }, []);
+
+  const handlePushToggle = async (enabled: boolean) => {
+    if (!("Notification" in window)) {
+      toast({
+        title: "Not Supported",
+        description: "Push notifications are not supported in this browser",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (enabled) {
+      const permission = await Notification.requestPermission();
+      if (permission === "granted") {
+        setPushEnabled(true);
+        toast({
+          title: "Enabled",
+          description: "Push notifications have been enabled",
+        });
+      } else {
+        toast({
+          title: "Permission Denied",
+          description: "Please enable notifications in your browser settings",
+          variant: "destructive",
+        });
+      }
+    } else {
+      setPushEnabled(false);
+      toast({
+        title: "Disabled",
+        description: "Push notifications have been disabled",
+      });
+    }
+  };
+
+  const handleTestPush = async () => {
+    if (!pushEnabled) {
+      toast({
+        title: "Enable Notifications",
+        description: "Please enable push notifications first",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setTestingPush(true);
+    try {
+      new Notification("Test Notification", {
+        body: "This is a test notification from Frycom!",
+        icon: "/Section 1.png",
+        badge: "/Section 1.png",
+      });
+      
+      toast({
+        title: "Test Sent",
+        description: "Check your notifications!",
+      });
+    } catch (error) {
+      console.error("Error sending test notification:", error);
+      toast({
+        title: "Error",
+        description: "Failed to send test notification",
+        variant: "destructive",
+      });
+    } finally {
+      setTestingPush(false);
+    }
+  };
 
   const handleLogout = async () => {
     await signOut();
@@ -297,7 +379,6 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
           Edit Profile
         </Button>
 
-        {/* Aktualisierter Button für Verifizierung */}
         <Button
           onClick={() => navigate("/verified")}
           variant="outline"
@@ -306,6 +387,42 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
           <User className="h-4 w-4" />
           Verifiziert werden
         </Button>
+
+        {/* Push Notifications Section */}
+        <div className="w-full mt-6 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Bell className="h-5 w-5 text-[#00b4d8]" />
+              <Label htmlFor="push-notifications" className="font-semibold">
+                Push Notifications
+              </Label>
+            </div>
+            <Switch
+              id="push-notifications"
+              checked={pushEnabled}
+              onCheckedChange={handlePushToggle}
+            />
+          </div>
+          
+          <Button
+            onClick={handleTestPush}
+            disabled={!pushEnabled || testingPush}
+            variant="outline"
+            className="w-full"
+          >
+            {testingPush ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Sending...
+              </>
+            ) : (
+              <>
+                <Bell className="h-4 w-4 mr-2" />
+                Test Notification
+              </>
+            )}
+          </Button>
+        </div>
 
         <div className="w-full mt-6 space-y-4">
           {profile.showEmail && (
@@ -401,7 +518,6 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
             </p>
           </div>
         )}
-        Anything else?
       </div>
 
       {/* Bottom Navigation Bar */}
